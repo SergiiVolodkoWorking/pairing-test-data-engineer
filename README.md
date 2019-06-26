@@ -4,7 +4,7 @@ Data Engineer Pairing Exercise
 
 # The Task
 
-The task involves developing a data pipeline and its underlying infrastructure,  in order to complete the following user story, using sample data sources that will be provided.
+The task involves developing a data pipeline and its underlying infrastructure. In order to complete the following user story sample data sources will be provided.
 
 
 ### User story:
