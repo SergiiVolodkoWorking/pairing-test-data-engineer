@@ -10,7 +10,7 @@ The task involves developing a data pipeline and its underlying infrastructure. 
 ### User story:
 
 we would like to explore and process the flights data in order to answer questions such as:
-- how many years the flights table covers ?
+- how much time does the flights table cover ?
 - how many departure cities the flight database covers ?
 - what is the relationship between flights and planes tables ?
 - which airplane manufacturer incurred the most delays in the analysis period ?
