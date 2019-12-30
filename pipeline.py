@@ -2,6 +2,8 @@ from metaflow import step, FlowSpec
 import os
 
 class AirlinesDataPreparationFlow(FlowSpec):
+    data_floder = os.path.join(os.path.dirname(__file__), 'data')
+    
     @step
     def start(self):
         print('Flow started');
