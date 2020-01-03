@@ -1,9 +1,12 @@
 import unittest
 import pandas as pd
 
-from transformations import add_date
-
 from pandas.testing import assert_frame_equal
+
+from parameterized import parameterized
+
+from transformations import add_date,\
+                            count_column_groups
 
 class TestTransformations(unittest.TestCase):
     def test_add_date(self):
@@ -31,3 +34,15 @@ class TestTransformations(unittest.TestCase):
         })
         assert_frame_equal(expected, add_date(df))
 
+        
+    @parameterized.expand([
+        [1, 1, 2],
+        ["text1", "text1", "text2"],
+        [pd.Timestamp('1990-1-30'), pd.Timestamp('1990-1-30'), pd.Timestamp('2019-12-1')]
+        ])
+    def test_count_groups_of_column(self, v1,v2,v3):
+        df = pd.DataFrame({
+            'column1': [v1,v2,v3],
+            'column2': ['some','other','data']
+        })
+        self.assertEqual(2, count_column_groups(df, df['column1']))
