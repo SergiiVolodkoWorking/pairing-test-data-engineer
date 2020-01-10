@@ -10,3 +10,6 @@ def count_column_groups(df, column_from_df):
     count = groups_df.shape[0] # Rows count in pandas
 
     return count
+
+def merge_detasets(df1, df2, common_column):
+    return pd.merge(df1, df2, on=common_column)
