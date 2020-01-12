@@ -9,20 +9,30 @@ class AirlinesDataPreparationFlow(FlowSpec):
     @step
     def start(self):
         print('Flow started')
-        self.next(self.load_flights)
+        self.next(self.load_flights, self.load_planes)
 
     @step
     def load_planes(self):
         self.planes_df = pd.read_csv('data/planes.csv')
-        self.next(self.merge_flights_and_planes)
+        self.next(self.wait_all_data_is_loaded)
 
     @step
     def load_flights(self):
         self.flights_df = pd.read_csv('data/flights.csv')
-        self.next(
-            self.load_planes,
+        self.next(self.wait_all_data_is_loaded)
+ 
+    @step
+    def wait_all_data_is_loaded(self, inputs):
+        self.planes_df = inputs.load_planes.planes_df
+        self.flights_df = inputs.load_flights.flights_df
+        self.next(self.start_transformations)
+
+    @step
+    def start_transformations(self):
+       self.next(
             self.get_covered_days_count,
-            self.get_departure_cities_count)
+            self.get_departure_cities_count,
+            self.merge_flights_and_planes)
 
     @step
     def get_covered_days_count(self):
