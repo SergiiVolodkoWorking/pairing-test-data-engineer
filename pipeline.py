@@ -23,8 +23,9 @@ class AirlinesDataPreparationFlow(FlowSpec):
  
     @step
     def wait_all_data_is_loaded(self, inputs):
-        self.planes_df = inputs.load_planes.planes_df
-        self.flights_df = inputs.load_flights.flights_df
+        # Metaflow special method to propagate values
+        # that were calculated in parallel steps
+        self.merge_artifacts(inputs)
         self.next(self.start_transformations)
 
     @step
@@ -55,14 +56,13 @@ class AirlinesDataPreparationFlow(FlowSpec):
     @step
     def find_biggest_delays(self):
         flights_by_planes = self.flights_and_planes_df.groupby(['manufacturer'])
-
         self.max_departure_delays = flights_by_planes['dep_delay'].max()
         self.max_arrival_delays = flights_by_planes['arr_delay'].max()
-
         self.next(self.join)
 
     @step
     def join(self, inputs):
+        
         self.next(self.end)
 
     @step
@@ -74,6 +74,8 @@ class AirlinesDataPreparationFlow(FlowSpec):
 # Run the pipline by executing:
 # python3 pipeline.py output-dot | dot -Tpng -o graph.png
 # to generate drawing of the pipeline
+# For vertical graph layout:
+# python pipeline.py output-dot | dot -Grankdir=TB -Tpng -o graph.png
 if __name__ == '__main__':
     AirlinesDataPreparationFlow()
     
