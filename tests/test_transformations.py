@@ -7,7 +7,11 @@ from parameterized import parameterized
 
 from transformations import add_date,\
                             count_column_groups,\
-                            merge_detasets
+                            merge_detasets,\
+                            extract_cities_from_airports,\
+                            merge_flights_with_cities,\
+                            add_connection_id,\
+                            aggregate_connections_between_cities
 
 class TestTransformations(unittest.TestCase):
     def test_add_date(self):
@@ -68,5 +72,71 @@ class TestTransformations(unittest.TestCase):
             'column2': ['first', None, 'dataset'],
             'column3': ['second','dataset', None]
         })
-        actual = merge_detasets(df1, df2, 'column1')
+        assert_frame_equal(expected, merge_detasets(df1, df2, 'column1'))
+
+    def test_extract_cities_df_from_airports(self):
+        airports_df = pd.DataFrame({
+            'IATA_CODE':    ['LCY','ODS'],
+            'CITY':         ['London', 'Odessa'],
+            'other_columns':['some','data']
+        })
+        expected = pd.DataFrame({
+            'IATA_CODE':    ['LCY','ODS'],
+            'CITY':         ['London', 'Odessa']
+        })
+        assert_frame_equal(expected, extract_cities_from_airports(airports_df))
+
+    def test_merge_flights_with_cities(self):
+        cities_df = pd.DataFrame({
+            'IATA_CODE':    ['LCY','ODS','RTM'],
+            'CITY':         ['London','Odessa','Rotterdam'],
+            'other':        ['any','other','airport']
+        })
+
+        flights_df = pd.DataFrame({
+            'origin':   ['LCY','ODS'],
+            'dest':     ['ODS','RTM'],
+            'other':    ['other', 'data']
+        })
+
+        expected = pd.DataFrame({
+            'origin':               ['LCY', 'ODS'],
+            'dest':                 ['ODS', 'RTM'],
+            'origin_city':          ['London', 'Odessa'],
+            'dest_city':            ['Odessa', 'Rotterdam']
+        })
+        assert_frame_equal(expected, merge_flights_with_cities(flights_df, cities_df))
+
+
+    def test_add_connection_id_to_flights_with_cities(self):
+        flights_with_cities_df = pd.DataFrame({
+            'origin':               ['LCY', 'ODS', 'LHR'],
+            'dest':                 ['ODS', 'RTM', 'ODS'],
+            'origin_city':          ['London', 'Odessa', 'London'],
+            'dest_city':            ['Odessa', 'Rotterdam','Odessa'],
+            'connection_id':        ['London-Odessa', 'Odessa-Rotterdam', 'London-Odessa']
+        })
+        expected = pd.DataFrame({
+            'origin':               ['LCY', 'ODS', 'LHR'],
+            'dest':                 ['ODS', 'RTM', 'ODS'],
+            'origin_city':          ['London', 'Odessa', 'London'],
+            'dest_city':            ['Odessa', 'Rotterdam','Odessa'],
+            'connection_id':        ['London-Odessa', 'Odessa-Rotterdam', 'London-Odessa']
+        })
+        assert_frame_equal(expected, add_connection_id(flights_with_cities_df))
+
+    def test_aggregate_connections_between_cities(self):
+        connections_df = pd.DataFrame({
+            'origin':               ['LCY', 'ODS', 'LHR'],
+            'dest':                 ['ODS', 'RTM', 'ODS'],
+            'origin_city':          ['London', 'Odessa', 'London'],
+            'dest_city':            ['Odessa', 'Rotterdam','Odessa'],
+            'connection_id':        ['London-Odessa', 'Odessa-Rotterdam', 'London-Odessa']
+        })
+
+        expected = pd.DataFrame({
+            'connection_id':['London-Odessa', 'Odessa-Rotterdam'],
+            'flights_count':[2, 1]
+        })
+        actual = aggregate_connections_between_cities(connections_df)
         assert_frame_equal(expected, actual)
