@@ -49,7 +49,7 @@ def aggregate_connections_between_cities(connections_df):
 
     df.columns = ['connection_id','flights_count']
 
-    df = df.sort_values(by='flights_count', ascending=False).reset_index()
+    df = df.sort_values(by='flights_count', ascending=False)
 
     return df
 

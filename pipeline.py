@@ -57,7 +57,10 @@ class AirlinesDataPreparationFlow(FlowSpec):
 
     @step
     def get_departure_cities_count(self):
-        flight_origins_count = count_column_groups(self.flights_df, self.flights_df['origin'])
+        cities = extract_cities_from_airports(self.airports_df)
+        flights_with_cities = merge_flights_with_cities(self.flights_df, cities)
+
+        flight_origins_count = count_column_groups(flights_with_cities, flights_with_cities['origin_city'])
         self.departure_cities_count = flight_origins_count
         self.next(self.wait_calculations_to_complete)
 
@@ -65,10 +68,15 @@ class AirlinesDataPreparationFlow(FlowSpec):
     def find_biggest_delays(self):
         flights_and_planes_df = merge_detasets(self.planes_df, self.flights_df, 'tailnum')
 
-        flights_by_planes = flights_and_planes_df.groupby(['manufacturer'])
+        flights_by_planes = flights_and_planes_df.groupby('manufacturer')
 
-        self.max_departure_delays = flights_by_planes['dep_delay'].max()
-        self.max_arrival_delays = flights_by_planes['arr_delay'].max()
+        max_departure_delays = flights_by_planes['dep_delay'].max().reset_index()
+        max_departure_delays = max_departure_delays.sort_values(by='dep_delay', ascending=False)
+        self.max_departure_delays = max_departure_delays
+        
+        max_arrival_delays = flights_by_planes['arr_delay'].max().reset_index()
+        max_arrival_delays = max_arrival_delays.sort_values(by='arr_delay', ascending=False)
+        self.max_arrival_delays = max_arrival_delays
 
         self.next(self.wait_calculations_to_complete)
 
@@ -109,10 +117,10 @@ class AirlinesDataPreparationFlow(FlowSpec):
     @step
     def save_delays_data(self):
         departure_delays_file = path.join(self.data_output_folder, 'departure_delays.csv')
-        self.max_departure_delays.to_csv(departure_delays_file)
+        self.max_departure_delays.to_csv(departure_delays_file, index=False)
 
         arrival_delays_file = path.join(self.data_output_folder, 'arrival_delays.csv')
-        self.max_arrival_delays.to_csv(arrival_delays_file)
+        self.max_arrival_delays.to_csv(arrival_delays_file, index=False)
 
         self.next(self.wait_all_results_saved)
 
@@ -120,8 +128,8 @@ class AirlinesDataPreparationFlow(FlowSpec):
     def save_cities_connectivity(self):
         cities_connectivity_file = path.join(self.data_output_folder, 'most_connected_cities.csv')
 
-        self.connections_between_cities.to_csv(cities_connectivity_file)
-        
+        self.connections_between_cities.to_csv(cities_connectivity_file, index=False)
+
         self.next(self.wait_all_results_saved)
 
     @step
