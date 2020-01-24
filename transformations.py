@@ -1,8 +1,9 @@
 import pandas as pd
 
 def add_date(df):
-    df['date'] = pd.to_datetime(df[['year', 'month', 'day', 'hour', 'minute']])
-    return df
+    df_with_date = df.copy()
+    df_with_date['date'] = pd.to_datetime(df[['year', 'month', 'day', 'hour', 'minute']])
+    return df_with_date
 
 def count_column_groups(df, column_from_df):
     groups_df = df.groupby(column_from_df).size()
@@ -48,6 +49,11 @@ def aggregate_connections_between_cities(connections_df):
 
     df.columns = ['connection_id','flights_count']
 
-    df = df.sort_values(by='flights_count', ascending=False)
+    df = df.sort_values(by='flights_count', ascending=False).reset_index()
 
     return df
+
+def save_json_object_as_file(data, file_path):
+    import json
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)

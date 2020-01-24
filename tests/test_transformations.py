@@ -11,7 +11,9 @@ from transformations import add_date,\
                             extract_cities_from_airports,\
                             merge_flights_with_cities,\
                             add_connection_id,\
-                            aggregate_connections_between_cities
+                            aggregate_connections_between_cities,\
+                            save_json_object_as_file
+
 
 class TestTransformations(unittest.TestCase):
     def test_add_date(self):
@@ -140,3 +142,19 @@ class TestTransformations(unittest.TestCase):
         })
         actual = aggregate_connections_between_cities(connections_df)
         assert_frame_equal(expected, actual)
+
+    def test_save_json_object_as_file(self):
+        statistics = {
+            'covered_days': 42,
+            'departure_cities_count': 100500
+            }
+        from os import path
+        file_path = path.join(path.dirname(__file__), '..', 'data', 'output', 'general_statistics.json')
+        save_json_object_as_file(statistics, file_path)
+
+        import json
+        saved = {}
+        with open(file_path, 'r', encoding='utf-8') as f:
+            saved = json.load(f)
+
+        self.assertEquals(statistics, saved)

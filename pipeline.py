@@ -1,5 +1,6 @@
 from metaflow import step, FlowSpec
 import pandas as pd
+from os import path
 
 from transformations import add_date,\
                             count_column_groups,\
@@ -7,9 +8,12 @@ from transformations import add_date,\
                             extract_cities_from_airports,\
                             merge_flights_with_cities,\
                             add_connection_id,\
-                            aggregate_connections_between_cities
+                            aggregate_connections_between_cities,\
+                            save_json_object_as_file
 
 class AirlinesDataPreparationFlow(FlowSpec):
+    data_output_folder = path.join(path.dirname(__file__), 'data', 'output')
+
     @step
     def start(self):
         print('Flow started')
@@ -42,13 +46,13 @@ class AirlinesDataPreparationFlow(FlowSpec):
        self.next(
             self.get_covered_days_count,
             self.get_departure_cities_count,
-            self.merge_flights_and_planes,
+            self.find_biggest_delays,
             self.calculate_cities_connectivity)
 
     @step
     def get_covered_days_count(self):
         df = add_date(self.flights_df)
-        self.covered_days  = count_column_groups(df, df['date'].dt.date)
+        self.covered_days = count_column_groups(df, df['date'].dt.date)
         self.next(self.wait_calculations_to_complete)
 
     @step
@@ -58,15 +62,14 @@ class AirlinesDataPreparationFlow(FlowSpec):
         self.next(self.wait_calculations_to_complete)
 
     @step
-    def merge_flights_and_planes(self):
-        self.flights_and_planes_df = merge_detasets(self.planes_df, self.flights_df, 'tailnum')
-        self.next(self.find_biggest_delays)
-
-    @step
     def find_biggest_delays(self):
-        flights_by_planes = self.flights_and_planes_df.groupby(['manufacturer'])
+        flights_and_planes_df = merge_detasets(self.planes_df, self.flights_df, 'tailnum')
+
+        flights_by_planes = flights_and_planes_df.groupby(['manufacturer'])
+
         self.max_departure_delays = flights_by_planes['dep_delay'].max()
         self.max_arrival_delays = flights_by_planes['arr_delay'].max()
+
         self.next(self.wait_calculations_to_complete)
 
     @step
@@ -81,13 +84,53 @@ class AirlinesDataPreparationFlow(FlowSpec):
 
     @step
     def wait_calculations_to_complete(self, inputs):
+        self.merge_artifacts(inputs)
+        self.next(self.start_saving_output_results)
+
+    @step
+    def start_saving_output_results(self):
+        self.next(
+            self.save_general_statistics,
+            self.save_delays_data,
+            self.save_cities_connectivity)
+
+    @step
+    def save_general_statistics(self):
+        statistics = {
+            'covered_days': self.covered_days,
+            'departure_cities_count': self.departure_cities_count
+            }
+
+        file_path = path.join(path.dirname(__file__), 'data', 'output', 'general_statistics.json')
+        save_json_object_as_file(statistics, file_path)
+
+        self.next(self.wait_all_results_saved)
+
+    @step
+    def save_delays_data(self):
+        departure_delays_file = path.join(self.data_output_folder, 'departure_delays.csv')
+        self.max_departure_delays.to_csv(departure_delays_file)
+
+        arrival_delays_file = path.join(self.data_output_folder, 'arrival_delays.csv')
+        self.max_arrival_delays.to_csv(arrival_delays_file)
+
+        self.next(self.wait_all_results_saved)
+
+    @step
+    def save_cities_connectivity(self):
+        cities_connectivity_file = path.join(self.data_output_folder, 'most_connected_cities.csv')
+
+        self.connections_between_cities.to_csv(cities_connectivity_file)
+        
+        self.next(self.wait_all_results_saved)
+
+    @step
+    def wait_all_results_saved(self, inputs):
         self.next(self.end)
 
     @step
     def end(self):
-        print('Flow completed')
-        # print(self.covered_days)
-        # print(self.departure_cities_count)
+        print('Flow completed.')
 
 # Run the pipline by executing:
 # python3 pipeline.py output-dot | dot -Tpng -o graph.png
