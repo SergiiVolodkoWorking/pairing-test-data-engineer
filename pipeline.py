@@ -12,6 +12,7 @@ from transformations import add_date,\
                             save_json_object_as_file
 
 class AirlinesDataPreparationFlow(FlowSpec):
+    data_folder = path.join(path.dirname(__file__), 'data')
     data_output_folder = path.join(path.dirname(__file__), 'data', 'output')
 
     @step
@@ -21,17 +22,17 @@ class AirlinesDataPreparationFlow(FlowSpec):
 
     @step
     def load_planes(self):
-        self.planes_df = pd.read_csv('data/planes.csv')
+        self.planes_df = pd.read_csv(path.join(self.data_folder, 'planes.csv'))
         self.next(self.wait_all_data_is_loaded)
 
     @step
     def load_flights(self):
-        self.flights_df = pd.read_csv('data/flights.csv')
+        self.flights_df = pd.read_csv(path.join(self.data_folder, 'flights.csv'))
         self.next(self.wait_all_data_is_loaded)
  
     @step
     def load_airports(self):
-        self.airports_df = pd.read_csv('data/airports.csv')
+        self.airports_df = pd.read_csv(path.join(self.data_folder, 'airports.csv'))
         self.next(self.wait_all_data_is_loaded)
 
     @step
@@ -109,7 +110,7 @@ class AirlinesDataPreparationFlow(FlowSpec):
             'departure_cities_count': self.departure_cities_count
             }
 
-        file_path = path.join(path.dirname(__file__), 'data', 'output', 'general_statistics.json')
+        file_path = path.join(self.data_output_folder, 'general_statistics.json')
         save_json_object_as_file(statistics, file_path)
 
         self.next(self.wait_all_results_saved)
@@ -141,7 +142,7 @@ class AirlinesDataPreparationFlow(FlowSpec):
         print('Flow completed.')
 
 # Run the pipline by executing:
-# python3 pipeline.py output-dot | dot -Tpng -o graph.png
+# python pipeline.py run
 # to generate drawing of the pipeline
 # For vertical graph layout:
 # python pipeline.py output-dot | dot -Grankdir=TB -Tpng -o graph.png
